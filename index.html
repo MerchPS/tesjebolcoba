@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Auth Demo — via Vercel Serverless</title>
+<style>
+  /* gaya sederhana, bisa ganti */
+  body{font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e6eef8;padding:24px}
+  .card{max-width:720px;margin:20px auto;padding:20px;background:#071025;border-radius:10px}
+  input{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #1b2a3a;background:#081526;color:#e6eef8}
+  button{padding:8px 12px;border-radius:6px;border:0;background:#3b82f6;color:#042038;font-weight:700}
+  .muted{color:#94a3b8;font-size:13px}
+  .users-list{background:#051223;padding:10px;border-radius:6px;margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Register</h2>
+    <div class="muted">Semua operasi aman via serverless (Vercel). Keys tidak di client.</div>
+    <div style="margin-top:12px">
+      <label>Username</label>
+      <input id="reg-username" />
+      <label>Password</label>
+      <input id="reg-password" type="password" />
+      <div style="margin-top:8px">
+        <button id="btn-register">Register</button>
+      </div>
+      <div id="reg-msg" style="margin-top:8px"></div>
+    </div>
+
+    <hr style="margin:18px 0" />
+
+    <h2>Login</h2>
+    <label>Username</label>
+    <input id="login-username" />
+    <label>Password</label>
+    <input id="login-password" type="password" />
+    <div style="margin-top:8px">
+      <button id="btn-login">Login</button>
+      <button id="btn-get-users" style="margin-left:8px">Show users</button>
+    </div>
+    <div id="login-msg" style="margin-top:8px"></div>
+
+    <div style="margin-top:18px">
+      <h3>Users (preview)</h3>
+      <div id="usersList" class="users-list">—</div>
+    </div>
+  </div>
+
+<script>
+const apiBase = '/api';
+
+async function postJson(url, body) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+document.getElementById('btn-register').addEventListener('click', async () => {
+  const u = document.getElementById('reg-username').value.trim();
+  const p = document.getElementById('reg-password').value;
+  const msg = document.getElementById('reg-msg');
+  msg.textContent = 'Processing...';
+  try {
+    const res = await postJson(apiBase + '/register', { username: u, password: p });
+    if (res.ok) {
+      msg.textContent = 'Register berhasil. Silakan login.';
+      loadUsers();
+    } else {
+      msg.textContent = 'Error: ' + (res.error || JSON.stringify(res));
+    }
+  } catch (err) {
+    msg.textContent = 'Server error';
+    console.error(err);
+  }
+});
+
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const u = document.getElementById('login-username').value.trim();
+  const p = document.getElementById('login-password').value;
+  const msg = document.getElementById('login-msg');
+  msg.textContent = 'Checking...';
+  try {
+    const res = await postJson(apiBase + '/login', { username: u, password: p });
+    if (res.ok) {
+      msg.textContent = 'Login sukses. Token disimpan di sessionStorage.';
+      sessionStorage.setItem('token', res.token);
+      sessionStorage.setItem('username', res.user.username);
+    } else {
+      msg.textContent = 'Login gagal: ' + (res.error || JSON.stringify(res));
+    }
+  } catch (err) {
+    msg.textContent = 'Server error';
+    console.error(err);
+  }
+});
+
+document.getElementById('btn-get-users').addEventListener('click', loadUsers);
+
+async function loadUsers() {
+  const el = document.getElementById('usersList');
+  el.textContent = 'Loading...';
+  try {
+    const r = await fetch(apiBase + '/users');
+    const j = await r.json();
+    if (!j.ok) { el.textContent = 'Error: ' + (j.error || JSON.stringify(j)); return; }
+    el.innerHTML = j.users.map(u => `<div>${u.username} <span class="muted">(${u.createdAt||'-'})</span></div>`).join('') || 'No users';
+  } catch (err) {
+    el.textContent = 'Server error';
+    console.error(err);
+  }
+}
+
+// load initially
+loadUsers();
+</script>
+</body>
+</html>
