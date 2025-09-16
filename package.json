@@ -1,0 +1,13 @@
+{
+  "name": "jsonbin-auth-vercel",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "node-fetch": "^3.4.1"
+  }
+}
